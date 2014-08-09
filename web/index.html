@@ -1,0 +1,61 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html> <head>
+<title></title>
+</head>
+
+<body>
+<p>Connect your OSC app/device at port 3333 to send messages to this
+page.<br /><br />Configure your OSC app/device to listen at port 3334
+to messages I send from this page.</p>
+
+<hr />
+
+Received from an OSC app/device at : <div id="status"></div>
+
+<hr />
+
+<script src="http://10.0.1.5:8081/socket.io/socket.io.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+
+<script>
+   socket = io.connect('http://10.0.1.5', { port: 8081, rememberTransport: false});
+   console.log('oi');
+   socket.on('connect', function() {
+        // sends to socket.io server the host/port of oscServer
+        // and oscClient
+        socket.emit('config',
+            {
+                server: {
+                    port: 3333,
+                    host: '127.0.0.1'
+                },
+                client: {
+                    port: 3334,
+                    host: '127.0.0.1'
+                }
+            }
+        );
+    });
+
+    socket.on('message', function(obj) {
+        var status = document.getElementById("status");
+        status.innerHTML = obj[0];
+        console.log(obj);
+    });
+
+    function sliderChange(value){
+        console.log('slidervalue='+value);
+        socket.emit('message', {address:'/sine', args:[value/1000]});
+    }
+
+</script>
+
+<button onclick="socket.emit('message', {address:'/sine', args:[0.5]});">Send OSC message</button>
+
+<div id="sliderDiv">
+ <input id="slider" type="range" min="0" max="1000" value="500" onchange="sliderChange(this.value)"/>
+ 
+</div>
+
+
+</body> </html>
