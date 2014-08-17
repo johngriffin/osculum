@@ -14,83 +14,104 @@ Received from an OSC app/device at : <div id="status"></div>
 
 <hr />
 
-<script src="http://10.0.1.5:8081/socket.io/socket.io.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.16/socket.io.min.js"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 
 <script>
-var osc = function(){
-    socket = io.connect('http://10.0.1.5', { port: 8081, rememberTransport: false});
+    var osculum = function() {
+    socket = io.connect('http://10.0.1.5', {
+        port: 8081,
+        rememberTransport: false
+    });
     console.log('oi');
     socket.on('connect', function() {
-         // sends to socket.io server the host/port of oscServer
-         // and oscClient
-         socket.emit('config',
-             {
-                 server: {
-                     port: 3333,
-                     host: '127.0.0.1'
-                 },
-                 client: {
-                     port: 3334,
-                     host: '127.0.0.1'
-                 }
-             }
-         );
-     });
+        // sends to socket.io server the host/port of oscServer
+        // and oscClient
+        socket.emit('config', {
+            server: {
+                port: 3333,
+                host: '127.0.0.1'
+            },
+            client: {
+                port: 3334,
+                host: '127.0.0.1'
+            }
+        });
+    });
 
-     socket.on('message', function(obj) {
-         var status = document.getElementById("status");
-         status.innerHTML = obj[0];
-         console.log(obj);
-     });
+    socket.on('message', function(obj) {
+        var status = document.getElementById("status");
+        status.innerHTML = obj[0];
+        console.log(obj);
+    });
 
-     function sliderChange(value){
-         socket.emit('message', {address:'/sine', args:[value/1000]});
-     }
-     
-     // limit how often we emit by comparing the difference between current vs prev value
-     var prevValue = (typeof prevValue === 'undefined') ? 0 : prevValue;
-    
-     function orientChange(value){
-        
-        if ((typeof prevValue !== 'undefined') && (Math.abs(value - prevValue) > 1)) {
-             var status = document.getElementById("status");
-             status.innerHTML = "emitting"+value;
-             socket.emit('message', {address:'/sine', args:[value/100]});
-             prevValue = value;
+    function sliderChange(value) {
+        socket.emit('message', {
+            address: '/slider',
+            args: [value / 1000]
+        });
+    }
+
+    // limit how often we emit by comparing the difference between current vs prev value
+    var prevValueFb = (typeof prevValueFb === 'undefined') ? 0 : prevValueFb;
+    var prevValueLr = (typeof prevValueLr === 'undefined') ? 0 : prevValueLr;
+
+    // fb = front/back, lr = left/right
+    function orientChange(fb, lr) {
+        if ((typeof prevValueFb !== 'undefined') && (Math.abs(fb - prevValueFb) > 1) 
+        || (typeof prevValueLr !== 'undefined') && (Math.abs(lr - prevValueLr) > 1)) {
+            logging("emitting FB=" + fb + " LR=" + lr);
+            socket.emit('message', {
+                address: '/oscular/fb',
+                args: [1 - (1 / 0.9 * (fb / 100))]
+            });
+            socket.emit('message', {
+                address: '/oscular/lr',
+                args: [1 - (1 / 0.9 * (lr / 100))]
+            }); //todo  lr range is -90 to +90
+            prevValueFb = fb;
+            prevValueLr = lr;
         }
-     }
-    
-     function buttonPress(){
-         socket.emit('message', {address:'/button'});
-     }
-    
+    }
 
-     window.addEventListener('deviceorientation', function(eventData) {
-         // gamma is the left-to-right tilt in degrees, where right is positive
-         var tiltLR = eventData.gamma;
+    function logging(message) {
+        var status = document.getElementById("status");
+        status.innerHTML = message;
+    }
 
-         // beta is the front-to-back tilt in degrees, where front is positive
-         var tiltFB = eventData.beta;
+    function buttonPress() {
+        socket.emit('message', {
+            address: '/button'
+        });
+    }
 
-         // alpha is the compass direction the device is facing in degrees
-         var dir = eventData.alpha
 
-         // deviceorientation does not provide this data
-         var motUD = null;
-        
-         orientChange(tiltFB);
-     }, false);
-    
+    window.addEventListener('deviceorientation', function(eventData) {
+        // gamma is the left-to-right tilt in degrees, where right is positive
+        var tiltLR = eventData.gamma;
+
+        // beta is the front-to-back tilt in degrees, where front is positive
+        var tiltFB = eventData.beta;
+
+        // alpha is the compass direction the device is facing in degrees
+        var dir = eventData.alpha
+
+        // deviceorientation does not provide this data
+        var motUD = null;
+
+        orientChange(tiltFB, tiltLR);
+    }, false);
+
 }();
+
    
 
 </script>
 
-<button onclick="socket.emit('message', {address:'/sine', args:[0.5]});">Send OSC message</button>
+<button onclick="socket.emit('message', {address:'/click'});">Send OSC message</button>
 
 <div id="sliderDiv">
- <input id="slider" type="range" min="0" max="1000" value="500" onchange="sliderChange(this.value)"/>
+ <input id="slider" type="range" min="0" max="1000" value="500" onchange="osculum.sliderChange(this.value)"/>
 </div>
 
 
