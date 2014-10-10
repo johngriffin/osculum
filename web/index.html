@@ -4,26 +4,21 @@
 </head>
 
 <body>
-<p>Connect your OSC app/device at port 3333 to send messages to this
-page.<br /><br />Configure your OSC app/device to listen at port 3334
-to messages I send from this page.</p>
+<p>We listen on port 3333 and send on 3334</p>
 
-<hr />
-
-Received from an OSC app/device at : <div id="status"></div>
-
-<hr />
+<p>Received from an OSC app/device at : <div id="status"></div></p>
 
 <script src="http://cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.16/socket.io.min.js"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 
 <script>
     var osculum = function() {
-    socket = io.connect('http://10.0.1.5', {
+        
+    // Set the host IP
+    socket = io.connect('http://10.0.1.13', {
         port: 8081,
         rememberTransport: false
     });
-    console.log('oi');
     socket.on('connect', function() {
         // sends to socket.io server the host/port of oscServer
         // and oscClient
@@ -108,10 +103,10 @@ Received from an OSC app/device at : <div id="status"></div>
 
 </script>
 
-<button onclick="socket.emit('message', {address:'/click'});">Send OSC message</button>
+<button onclick="socket.emit('message', {address:'/click'});">Send /click</button>
 
 <div id="sliderDiv">
- <input id="slider" type="range" min="0" max="1000" value="500" onchange="osculum.sliderChange(this.value)"/>
+ <input id="slider" type="range" min="0" max="1000" value="500" onchange="socket.emit('message', {address: '/slider', args: [this.value / 1000]});"/>
 </div>
 
 
